@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe</title>
+    <style>
+      body {
+        background-color: #121212;
+        color: #f5f5f5;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 90%;
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #212121;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      }
+
+      #game-board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        gap: 4px;
+        margin: 20px auto;
+        background-color: #424242;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .cell {
+        width: 100px;
+        height: 100px;
+        border: 2px solid #616161;
+        font-size: 3em;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .cell:hover {
+        background-color: rgba(221, 228, 232, 0.386);
+      }
+
+      .cell.X {
+        color: #e0f45a;
+      }
+
+      .cell.O {
+        color: #fea31c;
+      }
+
+      #status {
+        margin-top: 20px;
+        font-weight: bold;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 20px;
+        background-color: #03a9f4;
+        border: none;
+        border-radius: 5px;
+        color: #fff;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0288d1;
+      }
+
+      .result {
+        margin-top: 20px;
+        font-weight: bold;
+        display: none;
+      }
+
+      .result.show {
+        display: block;
+      }
+
+      .time {
+        margin-top: 20px;
+      }
+
+      @media only screen and (max-width: 600px) {
+        .container {
+          max-width: 100%;
+        }
+        #game-board {
+          grid-template-columns: repeat(3, 80px);
+        }
+        .cell {
+          width: 80px;
+          height: 80px;
+          font-size: 2.5em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tic Tac Toe</h1>
+      <div id="game-board">
+        <div class="cell" id="0"></div>
+        <div class="cell" id="1"></div>
+        <div class="cell" id="2"></div>
+        <div class="cell" id="3"></div>
+        <div class="cell" id="4"></div>
+        <div class="cell" id="5"></div>
+        <div class="cell" id="6"></div>
+        <div class="cell" id="7"></div>
+        <div class="cell" id="8"></div>
+      </div>
+      <div id="status">Player X's turn</div>
+      <button id="reset">Reset</button>
+      <div class="result" id="result"></div>
+      <div class="time" id="time"></div>
+    </div>
+
+    <script>
+      const cells = document.querySelectorAll(".cell");
+      const statusDisplay = document.getElementById("status");
+      const resetButton = document.getElementById("reset");
+      const resultDisplay = document.getElementById("result");
+      const timeDisplay = document.getElementById("time");
+
+      let currentPlayer = "X";
+      let gameActive = true;
+      let gameState = ["", "", "", "", "", "", "", "", ""];
+      let startTime = null;
+      let endTime = null;
+      let intervalId = null;
+
+      const winningConditions = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      function handleCellClick(clickedCellEvent) {
+        const clickedCell = clickedCellEvent.target;
+        const clickedCellIndex = parseInt(clickedCell.getAttribute("id"));
+
+        if (gameState[clickedCellIndex] !== "" || !gameActive) {
+          return;
+        }
+
+        handleCellPlayed(clickedCell, clickedCellIndex);
+        handleResultValidation();
+      }
+
+      function handleCellPlayed(clickedCell, clickedCellIndex) {
+        gameState[clickedCellIndex] = currentPlayer;
+        clickedCell.textContent = currentPlayer;
+        clickedCell.classList.add(currentPlayer);
+      }
+
+      function handleResultValidation() {
+        let roundWon = false;
+        for (let i = 0; i < winningConditions.length; i++) {
+          const winCondition = winningConditions[i];
+          let a = gameState[winCondition[0]];
+          let b = gameState[winCondition[1]];
+          let c = gameState[winCondition[2]];
+          if (a === "" || b === "" || c === "") {
+            continue;
+          }
+          if (a === b && b === c) {
+            roundWon = true;
+            break;
+          }
+        }
+
+        if (roundWon) {
+          statusDisplay.innerHTML = "";
+          gameActive = false;
+          resultDisplay.textContent = `Player ${currentPlayer} wins!`;
+          resultDisplay.classList.add("show");
+          endTime = new Date();
+          clearInterval(intervalId);
+          displayTime();
+          return;
+        }
+
+        let roundDraw = !gameState.includes("");
+        if (roundDraw) {
+          statusDisplay.innerHTML = "";
+          gameActive = false;
+          resultDisplay.textContent = "It's a draw!";
+          resultDisplay.classList.add("show");
+          endTime = new Date();
+          clearInterval(intervalId);
+          displayTime();
+          return;
+        }
+
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        statusDisplay.innerHTML = `Player ${currentPlayer}'s turn`;
+      }
+
+      function handleReset() {
+        currentPlayer = "X";
+        gameActive = true;
+        gameState = ["", "", "", "", "", "", "", "", ""];
+        statusDisplay.innerHTML = `Player ${currentPlayer}'s turn`;
+        cells.forEach((cell) => {
+          cell.textContent = "";
+          cell.classList.remove("X", "O");
+        });
+        resultDisplay.textContent = "";
+        resultDisplay.classList.remove("show");
+        startTime = new Date();
+        clearInterval(intervalId);
+        intervalId = setInterval(displayTime, 1000);
+      }
+
+      function displayTime() {
+        if (startTime) {
+          const currentTime = new Date();
+          const elapsedTime = Math.round((currentTime - startTime) / 1000);
+          const minutes = Math.floor(elapsedTime / 60);
+          const seconds = elapsedTime % 60;
+          timeDisplay.textContent = `Time: ${
+            minutes < 10 ? "0" : ""
+          }${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+        }
+      }
+
+      cells.forEach((cell) => cell.addEventListener("click", handleCellClick));
+      resetButton.addEventListener("click", handleReset);
+
+      handleReset(); // Start the timer when the game loads
+    </script>
+  </body>
+</html>
